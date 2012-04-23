@@ -9,14 +9,17 @@ import traceback
 import itertools
 
 class IrcClient(Thread):
-    def __init__(self, nick, host='localhost', port=6667):
+    def __init__(self, nick, password = None, host='localhost', port=6667):
         Thread.__init__(self)
         self.channels = sets.Set()
         self.nick = nick
+        self.password = password
         self.host = host
         self.port = port
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.msgQ = Queue()
+        if self.password:
+            self.msgQ.put(("PASS %s\r\n" % self.password, 0))
         self.msgQ.put(("NICK %s\r\n" % self.nick, 0))
         self.msgQ.put(("USER %s %s bla :%s\r\n" % 
             (self.nick, self.host, self.nick), 0))
@@ -112,6 +115,7 @@ if __name__ == '__main__':
     host = 'localhost'
     channel = ''
     nickname = ''
+    password = None
     loop = False
 
     for item in sys.argv:
@@ -123,11 +127,13 @@ if __name__ == '__main__':
             channel = item.split('=', 1)[1]
         if item.startswith('-n='):
             nickname = item.split('=', 1)[1]
+        if item.startswith('-p='):
+            password = item.split('=', 1)[1]
         if item == '-l':
             loop = True
 
     # start irc client thread
-    c = IrcClient(nickname, host)
+    c = IrcClient(nickname, password, host)
     c.start()
     c.enter(channel)
 
